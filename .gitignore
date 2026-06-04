@@ -1,0 +1,84 @@
+# ======================
+# General
+# ======================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
+*.bak
+
+# ======================
+# Python
+# ======================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+
+# ======================
+# Streamlit
+# ======================
+.streamlit/secrets.toml
+
+# ======================
+# MATLAB
+# ======================
+*.asv
+*.autosave
+*.m~
+slprj/
+codegen/
+*.mex*
+*.mlx~
+
+# ======================
+# Jupyter
+# ======================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ======================
+# Data — large files
+# ======================
+data/processed/*
+!data/processed/.gitkeep
+*.csv.gz
+*.parquet
+
+# ======================
+# Saved Models — large files
+# ======================
+saved_models/*.pkl
+saved_models/*.joblib
+!saved_models/.gitkeep
+
+# ======================
+# Reports — generated outputs
+# ======================
+reports/*.pdf
+reports/*.docx
+!reports/.gitkeep
+
+# ======================
+# IDE
+# ======================
+.vscode/
+.idea/
+*.code-workspace
+
+# ======================
+# OS
+# ======================
+ehthumbs.db
+Icon?
+._*
