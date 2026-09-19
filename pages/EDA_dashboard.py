@@ -8,7 +8,113 @@
 # Dataset tested:  kc_house_data.csv  (King County House Prices)
 #
 # Run with:  streamlit run ML_Engine_Dashboard.py
+# ================================================================# =============================================================================
+# F — FILE LOADER (Sidebar-free: shown above tabs)
 # =============================================================================
+
+import pathlib
+ 
+_root  = pathlib.Path(__file__).parent.parent
+_full  = _root / "data" / "ko_stock_clean.csv"   
+
+@st.cache_data
+def _load_auto():
+    if _full.exists():
+        return pd.read_csv(_full)
+    return pd.DataFrame()
+ 
+with st.sidebar:
+    st.image(str(LOGO), width=70)
+    st.markdown("---")
+ 
+with st.container():
+    col_load, col_target, col_thresh, col_info = st.columns([3, 2, 2, 3])
+ 
+    with col_load:
+        # ── Try auto-load first ──────────────────────────────
+        if st.session_state.df_raw is None:
+            _auto_df = _load_auto()
+            if not _auto_df.empty:
+                st.session_state.df_raw   = _auto_df.copy()
+                st.session_state.df_work  = _auto_df.copy()
+                st.session_state.file_name = "ko_stock_clean.csv"
+                st.session_state.num_cols  = get_numeric_cols(_auto_df)
+                st.session_state.cat_cols  = get_cat_cols(_auto_df)
+                if len(st.session_state.num_cols) == 0:
+                    st.session_state.num_cols = _auto_df.select_dtypes(
+                        include="number").columns.tolist()
+                if len(st.session_state.cat_cols) == 0:
+                    st.session_state.cat_cols = _auto_df.select_dtypes(
+                        include="object").columns.tolist()
+ 
+        # ── Manual upload as fallback ────────────────────────
+        uploaded = st.file_uploader(
+            "📂 Load Dataset (.csv)", type=["csv"],
+            key="file_uploader", label_visibility="collapsed",
+            help="Upload CSV if auto-load fails"
+        )
+        if uploaded:
+            try:
+                df = pd.read_csv(uploaded, sep=None, engine="python")
+                st.session_state.df_raw   = df.copy()
+                st.session_state.df_work  = df.copy()
+                st.session_state.file_name = uploaded.name
+                st.session_state.num_cols  = get_numeric_cols(df)
+                st.session_state.cat_cols  = get_cat_cols(df)
+                if len(st.session_state.num_cols) == 0:
+                    st.session_state.num_cols = df.select_dtypes(
+                        include="number").columns.tolist()
+                if len(st.session_state.cat_cols) == 0:
+                    st.session_state.cat_cols = df.select_dtypes(
+                        include="object").columns.tolist()
+                st.success(f"✅ Loaded **{uploaded.name}** — "
+                           f"{df.shape[0]:,} rows × {df.shape[1]} columns")
+            except Exception as e:
+                st.error(f"Error loading file: {e}")
+ 
+        # ── Status message ───────────────────────────────────
+        if st.session_state.df_raw is not None:
+            _src = "data/ folder" if not uploaded else uploaded.name
+            st.success(f"✅ {st.session_state.file_name} loaded "
+                       f"({st.session_state.df_raw.shape[0]:,} rows) "
+                       f"— from {_src}")
+ 
+    with col_target:
+        if st.session_state.df_raw is not None:
+            cols = st.session_state.df_raw.columns.tolist()
+            default_idx = cols.index("next_close") \
+                          if "price_up" in cols else 0
+            target = st.selectbox("🎯 Target Variable",
+                                  cols, index=default_idx)
+            st.session_state.target_col = target
+ 
+    with col_thresh:
+        thresh = st.slider(
+            "Correlation Threshold",
+            0.10, 0.90,
+            float(st.session_state.corr_threshold),
+            0.05
+        )
+        st.session_state.corr_threshold = thresh
+ 
+    with col_info:
+        if st.session_state.df_raw is not None:
+            df = st.session_state.df_raw
+            st.markdown(f"""
+            <div style="background:white;border-radius:8px;padding:10px 14px;
+                        box-shadow:0 2px 6px rgba(0,0,0,.08);
+                        font-size:0.82rem;line-height:1.8;">
+                📊 <b>Shape:</b> {df.shape[0]:,} × {df.shape[1]}<br>
+                🔢 <b>Numeric:</b> {len(st.session_state.num_cols)}
+                &nbsp;|&nbsp;
+                🔤 <b>Categorical:</b> {len(st.session_state.cat_cols)}<br>
+                ❓ <b>Missing:</b> {df.isnull().sum().sum():,} cells
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("⬆️ Upload CSV or place in data/ folder.")
+ 
+st.markdown("---")=============
 ## path = streamlit run "E:\FINAL PROJECTS\P5_KO_CocaCola_Stock_Prices_1980_2026\EDA_Dashboard.py"
 # ================================================================#
 # =============================================================================
@@ -348,7 +454,7 @@ with tabs[0]:
                     elif abs_val >= 0.50: return "background-color:#fff9c4; color:#e65100;"
                     else: return ""
 
-                styled = corr_df.style.applymap(color_corr, subset=["Correlation"])
+                styled = corr_df.style.map(color_corr, subset=["Correlation"])
                 st.dataframe(styled, use_container_width=True, height=320)
 
                 # Update important_vars
@@ -652,7 +758,7 @@ with tabs[2]:
                     elif val <= 10: return "background-color:#fff8e1; color:#e65100;"
                     else:          return "background-color:#ffebee; color:#c62828;"
 
-                styled_iqr = iqr_df.style.applymap(style_outlier_pct, subset=["Outlier %"])
+                styled_iqr = iqr_df.style.map(style_outlier_pct, subset=["Outlier %"])
                 st.dataframe(styled_iqr, use_container_width=True, height=230)
 
                 st.markdown("")
@@ -876,7 +982,7 @@ with tabs[4]:
                             return ""
                         except: return ""
 
-                    styled_sum = sum_df.style.applymap(color_corr_summary, subset=["Corr with Target"])
+                    styled_sum = sum_df.style.map(color_corr_summary, subset=["Corr with Target"])
                     st.dataframe(styled_sum, use_container_width=True, height=380)
 
                 # Export summary
@@ -1134,7 +1240,7 @@ with tabs[5]:
                     elif val < 20: return "background:#fff8e1;color:#e65100;"
                     return "background:#ffebee;color:#c62828;font-weight:bold;"
 
-                styled_miss = miss_df.style.applymap(color_miss, subset=["Missing %"])
+                styled_miss = miss_df.style.map(color_miss, subset=["Missing %"])
                 st.dataframe(styled_miss, use_container_width=True, height=300)
 
             with col_miss_right:
@@ -1383,7 +1489,7 @@ with tabs[6]:
                         return "background:#e8f5e9;color:#2e7d32;"
                     except: return ""
 
-                styled_vif = vif_df[["Feature", "VIF", "Status"]].style.applymap(
+                styled_vif = vif_df[["Feature", "VIF", "Status"]].style.map(
                     color_vif, subset=["VIF"]
                 )
                 st.dataframe(styled_vif, use_container_width=True, height=380)
