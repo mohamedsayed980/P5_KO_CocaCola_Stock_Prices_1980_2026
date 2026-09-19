@@ -52,6 +52,7 @@ def init_state():
             st.session_state[k] = v
 
 init_state()
+
 #-------------------------------------------------------
 import pandas as pd
 import numpy as np
@@ -89,7 +90,7 @@ from docx.shared import Pt, RGBColor, Inches
 # =============================================================================
 # ADD LOGO TO DASHBOARD 
 import pathlib
-LOGO = pathlib.Path(__file__).parent.parent / "M3_logo.png"
+LOGO = pathlib.Path(__file__).parent.parent / "3M_logo.png"
 
 # =============================================================================
 # F — FILE LOADER (Sidebar-free: shown above tabs)
