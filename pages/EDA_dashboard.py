@@ -89,8 +89,8 @@ from docx.shared import Pt, RGBColor, Inches
 # B — PAGE CONFIG & GLOBAL STYLE -----> in Home.py only 
 # =============================================================================
 # ADD LOGO TO DASHBOARD 
-import pathlib
-LOGO = pathlib.Path(__file__).parent.parent / "3M_logo.png"
+#import pathlib
+#LOGO = pathlib.Path(__file__).parent.parent / "M3_logo.png"
 
 # =============================================================================
 # F — FILE LOADER (Sidebar-free: shown above tabs)
