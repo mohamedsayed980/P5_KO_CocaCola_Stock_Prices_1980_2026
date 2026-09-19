@@ -195,7 +195,7 @@ with st.container():
         else:
             st.info("⬆️ Upload CSV or place in data/ folder.")
  
-st.markdown("---")=============
+st.markdown("---") 
 
 # =============================================================================
 # D — HELPER UTILITIES
