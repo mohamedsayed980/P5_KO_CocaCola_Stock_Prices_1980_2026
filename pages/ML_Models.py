@@ -631,7 +631,7 @@ def _no_data_msg():
 # =============================================================================
 with tab9:
     st.markdown("## 📉 Regression Models")
-    if df_global is None:
+    if st.session_state.df_raw is None:
         _no_data_msg()
         st.stop()
 
@@ -652,7 +652,7 @@ with tab9:
 
     # ── 9.2 Prepare data ────────────────────────────────────────────────────
     if not S["data_prepared_r"]:
-        prepare_regression(df_global)
+        prepare_regression(st.session_state.df_raw)
 
     # ── 9.3 Controls ────────────────────────────────────────────────────────
     section("⚙️ Training Configuration")
@@ -719,7 +719,7 @@ with tab9:
                              f"({'⚠️ All cores!' if n_jobs_r == os.cpu_count() else '✅ Safe mode'})")
 #-------------------------------------------------------------------
     if run_r and sel_models_r:
-        prepare_regression(df_global)          # refresh split
+        prepare_regression(st.session_state.df_raw)          # refresh split
         progress = st.progress(0, text="Training models …")
         #-------------------------------
         # ── In-tab CPU metrics ───────────────────────────────────────────────
@@ -900,7 +900,7 @@ with tab9:
 # =============================================================================
 with tab10:
     st.markdown("## 🎯 Classification Models")
-    if df_global is None:
+    if st.session_state.df_raw is None:
         _no_data_msg()
         st.stop()
 
@@ -923,7 +923,7 @@ with tab10:
 
     # ── 10.2 Prepare split ───────────────────────────────────────────────────
     if not S["data_prepared_c"]:
-        prepare_classification(df_global)
+        prepare_classification(st.session_state.df_raw)
 
     # ── 10.3 Controls ────────────────────────────────────────────────────────
     section("⚙️ Training Configuration")
@@ -960,7 +960,7 @@ with tab10:
         st.metric("CPU Load",         f"{cpu_info['percent']} %")
 #-------------------------------------------------
     if run_c and sel_models_c:
-        prepare_classification(df_global)
+        prepare_classification(st.session_state.df_raw)
         progress2 = st.progress(0, text="Training models …")
 #-----------------------------------------
 # ── In-tab CPU metrics ───────────────────────────────────────────────
@@ -1515,8 +1515,8 @@ with tab12:
         section("🎯 Single-Row Prediction")
         feat_names = S["feat_names"]
 
-        if df_global is not None and feat_names:
-            ref_df = df_global[feat_names].describe()
+        if st.session_state.df_raw is not None and feat_names:
+            ref_df = st.session_state.df_raw[feat_names].describe()
 
             with st.expander("📝 Enter feature values", expanded=True):
                 n_cols = 4
