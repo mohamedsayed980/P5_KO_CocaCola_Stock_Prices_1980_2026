@@ -9,3 +9,5 @@ scipy
 statsmodels 
 psutil 
 openpyxl 
+python-docs
+FPDF
