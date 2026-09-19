@@ -25,52 +25,40 @@ import streamlit as st
 # C  SESSION STATE INITIALISATION
 # ─────────────────────────────────────────────────────────────────────────────
 
+     # Add these to your init_state() function or
+# at the top of the file after imports:
+
+if "price_bins" not in st.session_state:
+    st.session_state.price_bins = [0, 300000, 500000, 750000, float('inf')]
+if "price_labels" not in st.session_state:
+    st.session_state.price_labels = ["Budget","Mid","Premium","Luxury"]
+if "feat_names" not in st.session_state:
+    st.session_state.feat_names = []
+if "data_prepared_c" not in st.session_state:
+    st.session_state.data_prepared_c = False
+
+def init_state():
     defaults = {
-        # ── EDA hand-off (written by ML_EDA_Dashboard) ──
-        "df_clean"        : None,
-        "df_work"         : None,   # Stage 1 writes here
-        "df_raw"          : None,   # Stage 1 raw data
-        "df_original"     : None,
-        "target_col"      : "next_close",
-        "feat_names"      : [],
-        "num_cols"        : [],
-        "cat_cols"        : [],
-        "important_vars"  : [],
-        "file_name"       : None,
-        "insights_text"   : "",
-        "final_report_text": "",
-        
-        # ── Internal data splits ──
-        "X_train_r"  : None, "X_test_r"  : None,
-        "y_train_r"  : None, "y_test_r"  : None,
-        "X_train_c"  : None, "X_test_c"  : None,
-        "y_train_c"  : None, "y_test_c"  : None,
-        "scaler_r"   : None, "scaler_c"  : None,
-        "le"         : None,
-        # ── Trained model stores ──
-        "reg_models"   : {},   # {name: fitted_estimator}
-        "cls_models"   : {},
-        "reg_results"  : {},   # {name: {r2, mae, rmse, cv_r2, …}}
-        "cls_results"  : {},   # {name: {acc, f1, …}}
-        "best_reg_name": None,
-        "best_cls_name": None,
-        # ── Tab 12 ──
-        "batch_results"   : None,
-        "stage2_insights" : "",
-        # ── Flags ──
-        "data_prepared_r" : False,
-        "data_prepared_c" : False,
-        "price_bins"      : [0, 50, 100, 200, 10000],
-        "price_labels"    : ["Low","Medium","High","Premium"],
+        "df_raw"      : None,   # original loaded dataframe
+        "df_clean"    : None,   # after IQR cleaning (Tab 3)
+        "df_imputed"  : None,   # after imputation    (Tab 7)
+        "df_work"     : None,   # working copy used across tabs
+        "target_col"  : None,
+        "num_cols"    : [],
+        "cat_cols"    : [],
+        "important_vars" : [],
+        "iqr_table"   : None,   # Tab 3 outlier table
+        "insights_text": "",
+        "file_name"   : "",
+        "corr_threshold" : 0.30,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
+init_state()
 
 S = st.session_state   # shorthand
-
-
 
 from fpdf import FPDF
 import pandas as pd
@@ -501,73 +489,113 @@ def acc_colour(v: float) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # E  SIDEBAR — DATA LOADER
 # ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# F — FILE LOADER (Sidebar-free: shown above tabs)
+# =============================================================================
 
+import pathlib
+ 
+_root  = pathlib.Path(__file__).parent.parent
+_full  = _root / "data" / "ko_stock_clean.csv"   
+
+@st.cache_data
+def _load_auto():
+    if _full.exists():
+        return pd.read_csv(_full)
+    return pd.DataFrame()
+ 
 with st.sidebar:
     st.image(str(LOGO), width=70)
     st.markdown("---")
-
-with st.sidebar:
-    st.markdown("## 🤖 ML Models Engine")
-    st.markdown("**Stage 2 — Training & Prediction**")
-    st.divider()
-
-    # ── Data source ──────────────────────────────────────────────────────────
-    st.markdown("### 📂 Data Source")
-    data_src = st.radio("", ["From EDA Dashboard (session)",
-                              "Upload CSV file"], label_visibility="collapsed")
-
-    df_global = None
-    if data_src == "From EDA Dashboard (session)":
-        df_global = load_data()
-        if df_global is not None:
-            st.success(f"✅ Loaded — {len(df_global):,} rows")
+ 
+with st.container():
+    col_load, col_target, col_thresh, col_info = st.columns([3, 2, 2, 3])
+ 
+    with col_load:
+        # ── Try auto-load first ──────────────────────────────
+        if st.session_state.df_raw is None:
+            _auto_df = _load_auto()
+            if not _auto_df.empty:
+                st.session_state.df_raw   = _auto_df.copy()
+                st.session_state.df_work  = _auto_df.copy()
+                st.session_state.file_name = "ko_stock_clean.csv"
+                st.session_state.num_cols  = get_numeric_cols(_auto_df)
+                st.session_state.cat_cols  = get_cat_cols(_auto_df)
+                if len(st.session_state.num_cols) == 0:
+                    st.session_state.num_cols = _auto_df.select_dtypes(
+                        include="number").columns.tolist()
+                if len(st.session_state.cat_cols) == 0:
+                    st.session_state.cat_cols = _auto_df.select_dtypes(
+                        include="object").columns.tolist()
+ 
+        # ── Manual upload as fallback ────────────────────────
+        uploaded = st.file_uploader(
+            "📂 Load Dataset (.csv)", type=["csv"],
+            key="file_uploader", label_visibility="collapsed",
+            help="Upload CSV if auto-load fails"
+        )
+        if uploaded:
+            try:
+                df = pd.read_csv(uploaded, sep=None, engine="python")
+                st.session_state.df_raw   = df.copy()
+                st.session_state.df_work  = df.copy()
+                st.session_state.file_name = uploaded.name
+                st.session_state.num_cols  = get_numeric_cols(df)
+                st.session_state.cat_cols  = get_cat_cols(df)
+                if len(st.session_state.num_cols) == 0:
+                    st.session_state.num_cols = df.select_dtypes(
+                        include="number").columns.tolist()
+                if len(st.session_state.cat_cols) == 0:
+                    st.session_state.cat_cols = df.select_dtypes(
+                        include="object").columns.tolist()
+                st.success(f"✅ Loaded **{uploaded.name}** — "
+                           f"{df.shape[0]:,} rows × {df.shape[1]} columns")
+            except Exception as e:
+                st.error(f"Error loading file: {e}")
+ 
+        # ── Status message ───────────────────────────────────
+        if st.session_state.df_raw is not None:
+            _src = "data/ folder" if not uploaded else uploaded.name
+            st.success(f"✅ {st.session_state.file_name} loaded "
+                       f"({st.session_state.df_raw.shape[0]:,} rows) "
+                       f"— from {_src}")
+ 
+    with col_target:
+        if st.session_state.df_raw is not None:
+            cols = st.session_state.df_raw.columns.tolist()
+            default_idx = cols.index("next_close") \
+                          if "price_up" in cols else 0
+            target = st.selectbox("🎯 Target Variable",
+                                  cols, index=default_idx)
+            st.session_state.target_col = target
+ 
+    with col_thresh:
+        thresh = st.slider(
+            "Correlation Threshold",
+            0.10, 0.90,
+            float(st.session_state.corr_threshold),
+            0.05
+        )
+        st.session_state.corr_threshold = thresh
+ 
+    with col_info:
+        if st.session_state.df_raw is not None:
+            df = st.session_state.df_raw
+            st.markdown(f"""
+            <div style="background:white;border-radius:8px;padding:10px 14px;
+                        box-shadow:0 2px 6px rgba(0,0,0,.08);
+                        font-size:0.82rem;line-height:1.8;">
+                📊 <b>Shape:</b> {df.shape[0]:,} × {df.shape[1]}<br>
+                🔢 <b>Numeric:</b> {len(st.session_state.num_cols)}
+                &nbsp;|&nbsp;
+                🔤 <b>Categorical:</b> {len(st.session_state.cat_cols)}<br>
+                ❓ <b>Missing:</b> {df.isnull().sum().sum():,} cells
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.warning("No data in session.\nRun ML_EDA_Dashboard first or upload a file.")
-    else:
-        up = st.file_uploader("Upload CSV", type=["csv"],
-                               label_visibility="collapsed")
-        if up:
-            df_global = pd.read_csv(up)
-            S["df_clean"] = df_global
-            st.success(f"✅ {len(df_global):,} rows loaded")
-
-    # ── Target / features ────────────────────────────────────────────────────
-    if df_global is not None:
-        st.divider()
-        st.markdown("### ⚙️ Configuration")
-        num_cols = df_global.select_dtypes(include=np.number).columns.tolist()
-        target   = st.selectbox("Target column (regression)",
-                                 num_cols,
-                                 index=num_cols.index("next_close")
-                                 if "next_close" in num_cols else 0)
-        S["target_col"] = target
-        feat_opts = [c for c in num_cols if c != target]
-        sel_feats = st.multiselect("Feature columns", feat_opts,
-                                   default=feat_opts[:12] if len(feat_opts) >= 12
-                                   else feat_opts)
-        if sel_feats:
-            S["feat_names"] = sel_feats
-
-        st.divider()
-        st.markdown("### 🗂️ Price Categories")
-        bins_raw  = st.text_input("Bin edges (comma-sep)",
-                                  "0, 300000, 600000, 1000000, 9999999999")
-        labs_raw  = st.text_input("Labels (comma-sep)",
-                                  "Low, Medium, High, Luxury")
-        try:
-            S["price_bins"]   = [float(x) for x in bins_raw.split(",")]
-            S["price_labels"] = [x.strip() for x in labs_raw.split(",")]
-        except Exception:
-            st.error("Invalid bins / labels")
-
-    st.divider()
-    st.markdown("### 💾 Model Persistence")
-    save_dir = st.text_input("Save directory", "saved_models")
-
-    st.divider()
-    st.caption("ML Models Engine v2.0 · May 2025")
-
-
+            st.info("⬆️ Upload CSV or place in data/ folder.")
+ 
+st.markdown("---")
 # ─────────────────────────────────────────────────────────────────────────────
 # F  MAIN — 4 TABS
 # ─────────────────────────────────────────────────────────────────────────────
