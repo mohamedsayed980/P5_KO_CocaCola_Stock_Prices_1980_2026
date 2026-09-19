@@ -45,7 +45,7 @@ def init_state():
         "insights_text": "",
         "file_name"   : "",
         "corr_threshold" : 0.30,
-     "data_prepared_r": None,
+     
     }
     for k, v in defaults.items():
         if k not in st.session_state:
