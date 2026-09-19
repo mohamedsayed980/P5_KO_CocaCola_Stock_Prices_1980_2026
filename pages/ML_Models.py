@@ -148,9 +148,6 @@ def init_state():
             st.session_state[k] = v
 
 init_state()
-
-S = st.session_state   # shorthand
-
 # ─────────────────────────────────────────────────────────────────────────────
 # D  HELPER UTILITIES & helper function (for parallel training )
 # ─────────────────────────────────────────────────────────────────────────────
