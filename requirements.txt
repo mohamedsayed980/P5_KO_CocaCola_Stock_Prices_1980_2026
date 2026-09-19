@@ -10,5 +10,5 @@ statsmodels
 psutil 
 openpyxl 
 reportlab
-python-docs
+python-docx
 FPDF
