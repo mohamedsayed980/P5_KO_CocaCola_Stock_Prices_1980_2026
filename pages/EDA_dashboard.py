@@ -8,7 +8,91 @@
 # Dataset tested:  kc_house_data.csv  (King County House Prices)
 #
 # Run with:  streamlit run ML_Engine_Dashboard.py
-# ================================================================# =============================================================================
+## path = streamlit run "E:\FINAL PROJECTS\P5_KO_CocaCola_Stock_Prices_1980_2026\EDA_Dashboard.py"
+# ================================================================#
+# =============================================================================
+# A — IMPORTS
+# =============================================================================
+
+# A1 — Core
+import streamlit as st
+# =============================================================================
+# C — SESSION STATE INITIALISATION
+# =============================================================================
+ # Add these to your init_state() function or
+# at the top of the file after imports:
+
+if "price_bins" not in st.session_state:
+    st.session_state.price_bins = [0, 300000, 500000, 750000, float('inf')]
+if "price_labels" not in st.session_state:
+    st.session_state.price_labels = ["Budget","Mid","Premium","Luxury"]
+if "feat_names" not in st.session_state:
+    st.session_state.feat_names = []
+if "data_prepared_c" not in st.session_state:
+    st.session_state.data_prepared_c = False
+
+def init_state():
+    defaults = {
+        "df_raw"      : None,   # original loaded dataframe
+        "df_clean"    : None,   # after IQR cleaning (Tab 3)
+        "df_imputed"  : None,   # after imputation    (Tab 7)
+        "df_work"     : None,   # working copy used across tabs
+        "target_col"  : None,
+        "num_cols"    : [],
+        "cat_cols"    : [],
+        "important_vars" : [],
+        "iqr_table"   : None,   # Tab 3 outlier table
+        "insights_text": "",
+        "file_name"   : "",
+        "corr_threshold" : 0.30,
+     "data_prepared_r"=None
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+init_state()
+# =============================================================================
+import pandas as pd
+import numpy as np
+import os
+import io
+
+# A2 — Visualization
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import seaborn as sns
+
+# A3 — Stats & ML
+from scipy import stats
+from scipy.stats import zscore
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import KNNImputer
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+# A4 — Reports
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors as rl_colors
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle, Paragraph,
+    Spacer, HRFlowable
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+
+# =============================================================================
+# B — PAGE CONFIG & GLOBAL STYLE -----> in Home.py only 
+# =============================================================================
+# ADD LOGO TO DASHBOARD 
+import pathlib
+LOGO = pathlib.Path(__file__).parent.parent / "M3_logo.png"
+# ================================================================
+
+# =============================================================================
 # F — FILE LOADER (Sidebar-free: shown above tabs)
 # =============================================================================
 
@@ -115,87 +199,6 @@ with st.container():
             st.info("⬆️ Upload CSV or place in data/ folder.")
  
 st.markdown("---")=============
-## path = streamlit run "E:\FINAL PROJECTS\P5_KO_CocaCola_Stock_Prices_1980_2026\EDA_Dashboard.py"
-# ================================================================#
-# =============================================================================
-# A — IMPORTS
-# =============================================================================
-
-# A1 — Core
-import streamlit as st
-# =============================================================================
-# C — SESSION STATE INITIALISATION
-# =============================================================================
- # Add these to your init_state() function or
-# at the top of the file after imports:
-
-if "price_bins" not in st.session_state:
-    st.session_state.price_bins = [0, 300000, 500000, 750000, float('inf')]
-if "price_labels" not in st.session_state:
-    st.session_state.price_labels = ["Budget","Mid","Premium","Luxury"]
-if "feat_names" not in st.session_state:
-    st.session_state.feat_names = []
-if "data_prepared_c" not in st.session_state:
-    st.session_state.data_prepared_c = False
-
-def init_state():
-    defaults = {
-        "df_raw"      : None,   # original loaded dataframe
-        "df_clean"    : None,   # after IQR cleaning (Tab 3)
-        "df_imputed"  : None,   # after imputation    (Tab 7)
-        "df_work"     : None,   # working copy used across tabs
-        "target_col"  : None,
-        "num_cols"    : [],
-        "cat_cols"    : [],
-        "important_vars" : [],
-        "iqr_table"   : None,   # Tab 3 outlier table
-        "insights_text": "",
-        "file_name"   : "",
-        "corr_threshold" : 0.30,
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-init_state()
-# =============================================================================
-import pandas as pd
-import numpy as np
-import os
-import io
-
-# A2 — Visualization
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import seaborn as sns
-
-# A3 — Stats & ML
-from scipy import stats
-from scipy.stats import zscore
-from sklearn.preprocessing import StandardScaler
-from sklearn.impute import KNNImputer
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-
-# A4 — Reports
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors as rl_colors
-from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph,
-    Spacer, HRFlowable
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import cm
-from docx import Document
-from docx.shared import Pt, RGBColor, Inches
-
-# =============================================================================
-# B — PAGE CONFIG & GLOBAL STYLE -----> in Home.py only 
-# =============================================================================
-# ADD LOGO TO DASHBOARD 
-import pathlib
-LOGO = pathlib.Path(__file__).parent.parent / "M3_logo.png"
 
 # =============================================================================
 # D — HELPER UTILITIES
