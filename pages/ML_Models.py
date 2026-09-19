@@ -25,7 +25,7 @@ import streamlit as st
 # C  SESSION STATE INITIALISATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-     # Add these to your init_state() function or
+# Add these to your init_state() function or
 # at the top of the file after imports:
 
 if "price_bins" not in st.session_state:
@@ -51,13 +51,14 @@ def init_state():
         "insights_text": "",
         "file_name"   : "",
         "corr_threshold" : 0.30,
-        "data_prepared_r" : None,
+        
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
 init_state()
+
 from fpdf import FPDF
 import pandas as pd
 import numpy as np
