@@ -17,6 +17,28 @@
 
 # A1 — Core
 import streamlit as st
+# =============================================================================
+# C — SESSION STATE INITIALISATION
+# =============================================================================
+    defaults = {
+        "df_raw"      : None,   # original loaded dataframe
+        "df_clean"    : None,   # after IQR cleaning (Tab 3)
+        "df_imputed"  : None,   # after imputation    (Tab 7)
+        "df_work"     : None,   # working copy used across tabs
+        "target_col"  : None,
+        "num_cols"    : [],
+        "cat_cols"    : [],
+        "important_vars" : [],
+        "iqr_table"   : None,   # Tab 3 outlier table
+        "insights_text": "",
+        "file_name"   : "",
+        "corr_threshold" : 0.30,
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+
 import pandas as pd
 import numpy as np
 import os
@@ -53,32 +75,8 @@ from docx.shared import Pt, RGBColor, Inches
 # =============================================================================
 # ADD LOGO TO DASHBOARD 
 import pathlib
-LOGO = pathlib.Path(__file__).parent.parent / "3M_logo.png"
+LOGO = pathlib.Path(__file__).parent.parent / "M3_logo.png"
 
-# =============================================================================
-# C — SESSION STATE INITIALISATION
-# =============================================================================
-
-def init_state():
-    defaults = {
-        "df_raw"      : None,   # original loaded dataframe
-        "df_clean"    : None,   # after IQR cleaning (Tab 3)
-        "df_imputed"  : None,   # after imputation    (Tab 7)
-        "df_work"     : None,   # working copy used across tabs
-        "target_col"  : None,
-        "num_cols"    : [],
-        "cat_cols"    : [],
-        "important_vars" : [],
-        "iqr_table"   : None,   # Tab 3 outlier table
-        "insights_text": "",
-        "file_name"   : "",
-        "corr_threshold" : 0.30,
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-init_state()
 
 # =============================================================================
 # D — HELPER UTILITIES
@@ -176,9 +174,9 @@ with st.container():
         if st.session_state.df_raw is not None:
             cols = st.session_state.df_raw.columns.tolist()
             
-            #default_idx = cols.index("price") if "price" in cols else 0                    # old repo1# xx
+            #default_idx = cols.index("next_close") if "price" in cols else 0                    # old repo1# xx
             
-            default_idx = cols.index("Close") if "Close" in cols else 0
+            default_idx = cols.index("price_up") if "Close" in cols else 0
             
             target = st.selectbox("🎯 Target Variable", cols, index=default_idx)
             st.session_state.target_col = target
