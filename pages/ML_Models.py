@@ -21,6 +21,57 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # A1 — Core
 import streamlit as st
+# ─────────────────────────────────────────────────────────────────────────────
+# C  SESSION STATE INITIALISATION
+# ─────────────────────────────────────────────────────────────────────────────
+
+    defaults = {
+        # ── EDA hand-off (written by ML_EDA_Dashboard) ──
+        "df_clean"        : None,
+        "df_work"         : None,   # Stage 1 writes here
+        "df_raw"          : None,   # Stage 1 raw data
+        "df_original"     : None,
+        "target_col"      : "next_close",
+        "feat_names"      : [],
+        "num_cols"        : [],
+        "cat_cols"        : [],
+        "important_vars"  : [],
+        "file_name"       : None,
+        "insights_text"   : "",
+        "final_report_text": "",
+        
+        # ── Internal data splits ──
+        "X_train_r"  : None, "X_test_r"  : None,
+        "y_train_r"  : None, "y_test_r"  : None,
+        "X_train_c"  : None, "X_test_c"  : None,
+        "y_train_c"  : None, "y_test_c"  : None,
+        "scaler_r"   : None, "scaler_c"  : None,
+        "le"         : None,
+        # ── Trained model stores ──
+        "reg_models"   : {},   # {name: fitted_estimator}
+        "cls_models"   : {},
+        "reg_results"  : {},   # {name: {r2, mae, rmse, cv_r2, …}}
+        "cls_results"  : {},   # {name: {acc, f1, …}}
+        "best_reg_name": None,
+        "best_cls_name": None,
+        # ── Tab 12 ──
+        "batch_results"   : None,
+        "stage2_insights" : "",
+        # ── Flags ──
+        "data_prepared_r" : False,
+        "data_prepared_c" : False,
+        "price_bins"      : [0, 50, 100, 200, 10000],
+        "price_labels"    : ["Low","Medium","High","Premium"],
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+
+S = st.session_state   # shorthand
+
+
+
 from fpdf import FPDF
 import pandas as pd
 import numpy as np
@@ -111,55 +162,6 @@ CLR = {
     "white"     : "#ffffff",   # white
     "black"     : "#212121",   # near black
 }
-
-# ─────────────────────────────────────────────────────────────────────────────
-# C  SESSION STATE INITIALISATION
-# ─────────────────────────────────────────────────────────────────────────────
-def init_state():
-    defaults = {
-        # ── EDA hand-off (written by ML_EDA_Dashboard) ──
-        "df_clean"        : None,
-        "df_work"         : None,   # Stage 1 writes here
-        "df_raw"          : None,   # Stage 1 raw data
-        "df_original"     : None,
-        "target_col"      : "next_close",
-        "feat_names"      : [],
-        "num_cols"        : [],
-        "cat_cols"        : [],
-        "important_vars"  : [],
-        "file_name"       : None,
-        "insights_text"   : "",
-        "final_report_text": "",
-        
-        # ── Internal data splits ──
-        "X_train_r"  : None, "X_test_r"  : None,
-        "y_train_r"  : None, "y_test_r"  : None,
-        "X_train_c"  : None, "X_test_c"  : None,
-        "y_train_c"  : None, "y_test_c"  : None,
-        "scaler_r"   : None, "scaler_c"  : None,
-        "le"         : None,
-        # ── Trained model stores ──
-        "reg_models"   : {},   # {name: fitted_estimator}
-        "cls_models"   : {},
-        "reg_results"  : {},   # {name: {r2, mae, rmse, cv_r2, …}}
-        "cls_results"  : {},   # {name: {acc, f1, …}}
-        "best_reg_name": None,
-        "best_cls_name": None,
-        # ── Tab 12 ──
-        "batch_results"   : None,
-        "stage2_insights" : "",
-        # ── Flags ──
-        "data_prepared_r" : False,
-        "data_prepared_c" : False,
-        "price_bins"      : [0, 50, 100, 200, 10000],
-        "price_labels"    : ["Low","Medium","High","Premium"],
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-init_state()
-S = st.session_state   # shorthand
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -499,9 +501,6 @@ def acc_colour(v: float) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # E  SIDEBAR — DATA LOADER
 # ─────────────────────────────────────────────────────────────────────────────
- 
-
-
 
 with st.sidebar:
     st.image(str(LOGO), width=70)
